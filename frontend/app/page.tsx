@@ -1,9 +1,17 @@
-import Image from "next/image";
+import { Button, Card } from "pixel-retroui";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      takashi's chimpo is too tiny.
-    </div>
+    <main className="p-10">
+      <Card className="p-6">
+        <h1 className="font-minecraft text-3xl">
+          Dungeon Tamer
+        </h1>
+
+        <Button className="mt-4">
+          Start Game
+        </Button>
+      </Card>
+    </main>
   );
 }
