@@ -1,24 +1,29 @@
 "use client";
 
-import { Button, Card } from "pixel-retroui";
-import { useState } from "react";
+import React, { useState } from "react";
+import { Button, Card, Popup } from "pixel-retroui";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [modalMessage, setModalMessage] = useState("");
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+
+  const openPopup = (msg: string) => {
+    setPopupMessage(msg);
+    setIsPopupOpen(true);
+  };
+
+  const closePopup = () => setIsPopupOpen(false);
 
   const handleLogin = () => {
     if (!email.includes("@") || !email.includes(".com")) {
-      setModalMessage("メールアドレスを正しく入力してください");
-      setShowModal(true);
+      openPopup("メールアドレスを正しく入力してください");
       return;
     }
 
     if (!pass) {
-      setModalMessage("パスワードを入力してください");
-      setShowModal(true);
+      openPopup("パスワードを入力してください");
       return;
     }
 
@@ -34,20 +39,18 @@ export default function Login() {
       className="min-h-screen bg-cover bg-top flex items-center justify-center p-10"
       style={{ backgroundImage: "url('/post-bg.png')" }}
     >
-      {/* モーダル */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 border-4 border-black w-[300px] text-center">
-            <p className="font-bold mb-4">{modalMessage}</p>
-            <Button
-              className="bg-red-500 text-white px-4 py-2 w-full rounded-none"
-              onClick={() => setShowModal(false)}
-            >
-              閉じる
-            </Button>
-          </div>
+      {/* Popup */}
+      <Popup isOpen={isPopupOpen} onClose={closePopup}>
+        <div className="p-4 text-center">
+          <p className="font-bold mb-4">{popupMessage}</p>
+          <Button
+            className="bg-red-500 text-white px-4 py-2 w-full rounded-none"
+            onClick={closePopup}
+          >
+            閉じる
+          </Button>
         </div>
-      )}
+      </Popup>
 
       <Card className="p-8 bg-yellow-200 bg-opacity-80 border-4 border-black text-center w-[420px]">
         <h1 className="text-3xl mb-6">ログイン</h1>
