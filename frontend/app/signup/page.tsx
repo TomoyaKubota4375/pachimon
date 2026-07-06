@@ -4,11 +4,28 @@ import { Button, Card } from "pixel-retroui";
 import { useState } from "react";
 
 export default function Signup() {
-  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   const handleSignup = () => {
-    console.log("新規登録:", name, pass);
+    if (!email.includes("@") || !email.includes(".com")) {
+      setModalMessage("メールアドレスを正しく入力してください");
+      setShowModal(true);
+      return;
+    }
+
+    if (!pass) {
+      setModalMessage("パスワードを入力してください");
+      setShowModal(true);
+      return;
+    }
+
+    // 仮登録 → 仮ログイン扱い
+    localStorage.setItem("isLoggedIn", "true");
+    localStorage.setItem("email", email);
+
     window.location.href = "/home";
   };
 
@@ -17,19 +34,30 @@ export default function Signup() {
       className="min-h-screen bg-cover bg-top flex items-center justify-center p-10"
       style={{ backgroundImage: "url('/post-bg.png')" }}
     >
-      {/* 枠のサイズを強制的に固定 */}
-      <Card className="p-8 bg-yellow-200 bg-opacity-80 border-4 border-black text-center w-[420px] max-w-[90vw]">
+      {/* モーダル */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 border-4 border-black w-[300px] text-center">
+            <p className="font-bold mb-4">{modalMessage}</p>
+            <Button
+              className="bg-red-500 text-white px-4 py-2 w-full rounded-none"
+              onClick={() => setShowModal(false)}
+            >
+              閉じる
+            </Button>
+          </div>
+        </div>
+      )}
 
-        <h1 className="font-minecraft text-3xl text-red-600 drop-shadow-[3px_3px_0px_black] mb-6">
-          新規登録
-        </h1>
+      <Card className="p-8 bg-yellow-200 bg-opacity-80 border-4 border-black text-center w-[420px]">
+        <h1 className="text-3xl mb-6">新規登録</h1>
 
         <input
           type="text"
-          placeholder="ユーザー名"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full p-3 mb-4 border-2 border-black rounded-none text-lg"
+          placeholder="メールアドレス"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full p-3 mb-4 border-2 border-black rounded-none"
         />
 
         <input
@@ -37,29 +65,26 @@ export default function Signup() {
           placeholder="パスワード"
           value={pass}
           onChange={(e) => setPass(e.target.value)}
-          className="w-full p-3 mb-6 border-2 border-black rounded-none text-lg"
+          className="w-full p-3 mb-6 border-2 border-black rounded-none"
         />
 
-        {/* 四角ボタン */}
         <Button
-          className="bg-green-500 text-white font-bold text-lg px-6 py-3 shadow-lg w-full rounded-none"
+          className="bg-green-500 text-white font-bold px-6 py-3 w-full rounded-none"
           onClick={handleSignup}
         >
           登録する
         </Button>
 
-        <p className="mt-4 text-black font-bold">
+        <p className="mt-4">
           <a href="/login" className="underline">ログインはこちら</a>
         </p>
 
-        {/* 四角ボタン */}
         <Button
-          className="bg-gray-600 text-white font-bold text-lg px-6 py-3 shadow-lg w-full mt-4 rounded-none"
+          className="bg-gray-600 text-white font-bold px-6 py-3 w-full rounded-none mt-4"
           onClick={() => (window.location.href = "/")}
         >
           タイトルへ戻る
         </Button>
-
       </Card>
     </main>
   );
