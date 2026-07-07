@@ -2,65 +2,109 @@
 
 import { useEffect, useState } from "react";
 import { Button, Card } from "pixel-retroui";
+import { getCurrentUser, logout as clearSession } from "@/lib/auth";
 
 export default function Home() {
-  const [user, setUser] = useState<string | null>(null);
+  const [trainerName, setTrainerName] = useState<string | null>(null);
 
   useEffect(() => {
-    setUser(localStorage.getItem("pachimon_user"));
+    const user = getCurrentUser();
+
+    if (!user) {
+      window.location.href = "/";
+      return;
+    }
+
+    setTrainerName(user.trainerName);
   }, []);
 
+  const movePage = (path: string) => {
+    window.location.href = path;
+  };
+
   const logout = () => {
-    localStorage.removeItem("pachimon_user");
+    clearSession();
     window.location.href = "/";
   };
 
+  // 未ログイン判定 or リダイレクト中はメニューを描画しない
+  if (!trainerName) {
+    return null;
+  }
+
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-[#0b0f1a] via-[#111a2e] to-[#05070d] relative overflow-hidden">
+    <main
+      className="relative flex min-h-screen items-center justify-center overflow-hidden bg-cover bg-center"
+      style={{
+        backgroundImage: "url('/post-bg.png')",
+      }}
+    >
+      {/* 背景を暗くする */}
+      <div className="absolute inset-0 bg-black/45"></div>
 
-      {/* 背景エフェクト */}
-      <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_center,_rgba(0,255,200,0.2),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[url('/post-bg.png')] bg-cover bg-center opacity-20" />
-
-      <Card className="relative w-[420px] max-w-[95vw] p-8 bg-black/80 border-4 border-cyan-400 text-white text-center shadow-[0_0_25px_rgba(0,255,255,0.25)]">
+      {/* メニュー */}
+      <Card className="relative z-8 w-[500px] max-w-[92vw] rounded-xl border-4 border-yellow-300 bg-black/70 p-8 text-white backdrop-blur-sm">
 
         {/* タイトル */}
-        <h1 className="text-4xl font-bold tracking-[0.3em] text-cyan-300 drop-shadow">
+        <h1 className="text-center text-6xl font-bold tracking-[0.25em] text-yellow-300 drop-shadow-[0_0_15px_gold]">
           PACHIMON
         </h1>
 
-        {/* ユーザー */}
-        <p className="mt-3 mb-6 text-sm text-gray-300">
-          TRAINER: <span className="text-white font-bold">{user}</span>
+        <p className="mt-2 text-center text-gray-300">
+          Monster Battle Game
         </p>
 
-        {/* メインメニュー */}
-        <div className="space-y-4 flex flex-col items-center">
+        {/* トレーナー */}
+        <div className="mt-8 rounded-lg border-2 border-cyan-300 bg-black/60 p-2 text-center">
 
-        <Button
-          className="w-[320px] h-[56px] flex items-center justify-center text-lg font-bold bg-cyan-400 text-black hover:bg-cyan-300 active:scale-95 transition"
-          onClick={() => (window.location.href = "/battle/online")}
-        >
-          🌐 オンライン対戦
-        </Button>
+          <p className="text-sm tracking-widest text-cyan-300">
+            TRAINER
+          </p>
 
-        <Button
-          className="w-[320px] h-[56px] flex items-center justify-center text-lg font-bold bg-purple-500 text-white hover:bg-purple-400 active:scale-95 transition"
-          onClick={() => (window.location.href = "/battle/local")}
-        >
-          🎮 ローカル対戦
-        </Button>
+          <p className="mt-2 text-3xl font-bold text-white">
+            {trainerName}
+          </p>
 
-      </div>
+        </div>
 
-      <div className="mt-6 flex justify-center">
-        <Button
-          className="w-[320px] h-[48px] flex items-center justify-center text-sm font-bold bg-red-500 text-white hover:bg-red-400 active:scale-95 transition"
-          onClick={logout}
-        >
-          ログアウト
-        </Button>
-      </div>
+        {/* メニュー */}
+        <div className="mt-8 flex flex-col gap-3">
+
+          <Button
+            className="h-10 text-xl font-bold bg-yellow-400 text-black transition-all hover:scale-105 hover:brightness-110 active:scale-95"
+            onClick={() => movePage("/story")}
+          >
+            📖 ストーリーモード
+          </Button>
+
+          <Button
+            className="h-10 text-xl font-bold bg-green-500 text-black transition-all hover:scale-105 hover:brightness-110 active:scale-95"
+            onClick={() => movePage("/battle/online")}
+          >
+            🌐 オンライン対戦
+          </Button>
+
+          <Button
+            className="h-10 text-xl font-bold bg-blue-500 text-white transition-all hover:scale-105 hover:brightness-110 active:scale-95"
+            onClick={() => movePage("/battle/local")}
+          >
+            🎮 ローカル対戦
+          </Button>
+
+        {/* ログアウト */}
+          <Button
+            className="h-8 text-lg font-bold bg-red-500 text-white transition-all hover:scale-105 hover:brightness-110 active:scale-95"
+            onClick={logout}
+          >
+            🚪 ログアウト
+          </Button>
+
+        </div>
+
+        {/* バージョン */}
+        <div className="mt-8 border-t border-gray-500 pt-4 text-center text-sm text-gray-300">
+          Version 0.1.0
+        </div>
 
       </Card>
     </main>

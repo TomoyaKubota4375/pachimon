@@ -1,13 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
-import { Button, Card, Popup } from "pixel-retroui";
+import React, { useEffect, useState } from "react";
+import { Button, Card, Input, Popup } from "pixel-retroui";
+import { isLoggedIn, signup } from "@/lib/auth";
 
 export default function Signup() {
+  const [trainerName, setTrainerName] = useState("");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
+
+  useEffect(() => {
+    if (isLoggedIn()) {
+      window.location.href = "/home";
+    }
+  }, []);
 
   const openPopup = (msg: string) => {
     setPopupMessage(msg);
@@ -16,35 +25,30 @@ export default function Signup() {
 
   const closePopup = () => setIsPopupOpen(false);
 
-  const handleSignup = () => {
-    if (!email.includes("@") || !email.includes(".com")) {
-      openPopup("メールアドレスを正しく入力してください");
+  const handleSignup = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const result = signup(trainerName, email, pass);
+
+    if (!result.ok) {
+      openPopup(result.message);
       return;
     }
-
-    if (!pass) {
-      openPopup("パスワードを入力してください");
-      return;
-    }
-
-    // 仮登録 → 仮ログイン扱い
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("email", email);
 
     window.location.href = "/home";
   };
 
   return (
     <main
-      className="min-h-screen bg-cover bg-top flex items-center justify-center p-10"
+      className="min-h-screen bg-cover bg-center flex items-center justify-center p-10"
       style={{ backgroundImage: "url('/post-bg.png')" }}
     >
-      {/* Popup */}
       <Popup isOpen={isPopupOpen} onClose={closePopup}>
         <div className="p-4 text-center">
           <p className="font-bold mb-4">{popupMessage}</p>
+
           <Button
-            className="bg-red-500 text-white px-4 py-2 w-full rounded-none"
+            className="w-full bg-red-500 text-white"
             onClick={closePopup}
           >
             閉じる
@@ -52,42 +56,67 @@ export default function Signup() {
         </div>
       </Popup>
 
-      <Card className="p-8 bg-yellow-200 bg-opacity-80 border-4 border-black text-center w-[420px]">
-        <h1 className="text-3xl mb-6">新規登録</h1>
+      <Card className="w-[430px] p-8 bg-yellow-200/90 border-4 border-black text-center">
 
-        <input
-          type="text"
-          placeholder="メールアドレス"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-3 mb-4 border-2 border-black rounded-none"
-        />
+        <h1 className="text-4xl font-bold mb-2">
+          PACHIMON
+        </h1>
 
-        <input
-          type="password"
-          placeholder="パスワード"
-          value={pass}
-          onChange={(e) => setPass(e.target.value)}
-          className="w-full p-3 mb-6 border-2 border-black rounded-none"
-        />
+        <p className="mb-6 text-lg">
+          新規トレーナー登録
+        </p>
 
-        <Button
-          className="bg-green-500 text-white font-bold px-6 py-3 w-full rounded-none"
-          onClick={handleSignup}
-        >
-          登録する
-        </Button>
+        <form onSubmit={handleSignup}>
+          <Input
+            type="text"
+            placeholder="トレーナー名"
+            value={trainerName}
+            onChange={(e) => setTrainerName(e.target.value)}
+            className="w-full mb-4"
+          />
 
-        <p className="mt-4">
-          <a href="/login" className="underline">ログインはこちら</a>
+          <Input
+            type="email"
+            placeholder="メールアドレス"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full mb-4"
+          />
+
+          <Input
+            type="password"
+            placeholder="パスワード"
+            value={pass}
+            onChange={(e) => setPass(e.target.value)}
+            className="w-full mb-6"
+          />
+
+          <Button
+            type="submit"
+            className="w-full bg-green-600 text-white font-bold py-3"
+          >
+            新規登録
+          </Button>
+        </form>
+
+        <p className="mt-5">
+          すでにアカウントをお持ちですか？
         </p>
 
         <Button
-          className="bg-gray-600 text-white font-bold px-6 py-3 w-full rounded-none mt-4"
+          className="w-full mt-2 bg-blue-600 text-white font-bold py-3"
+          onClick={() => (window.location.href = "/login")}
+        >
+          ログイン
+        </Button>
+
+        <Button
+          className="w-full mt-4 bg-gray-700 text-white font-bold py-3"
           onClick={() => (window.location.href = "/")}
         >
           タイトルへ戻る
         </Button>
+
       </Card>
     </main>
   );
