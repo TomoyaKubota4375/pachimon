@@ -64,3 +64,9 @@ export const monsters: Record<string, BattleMonster> = {
     ],
   },
 };
+
+export function createMonster(
+  id: keyof typeof monsters
+): BattleMonster {
+  return structuredClone(monsters[id]);
+}
