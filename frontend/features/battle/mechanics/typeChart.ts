@@ -9,7 +9,6 @@ export function getTypeMultiplier(
     return 1;
   }
 
-  // 有利：2.0倍
   if (
     (attackType === TYPES.BLUE && defenseType === TYPES.RED) ||
     (attackType === TYPES.RED && defenseType === TYPES.GREEN) ||
@@ -20,7 +19,6 @@ export function getTypeMultiplier(
     return 2.0;
   }
 
-  // 不利：0.5倍
   if (
     (attackType === TYPES.RED && defenseType === TYPES.BLUE) ||
     (attackType === TYPES.GREEN && defenseType === TYPES.RED) ||
