@@ -79,14 +79,18 @@ export default function Home() {
 
           <Button
             className="h-10 text-xl font-bold bg-green-500 text-black transition-all hover:scale-105 hover:brightness-110 active:scale-95"
-            onClick={() => movePage("/battle/online")}
+            onClick={() =>
+              movePage(`/characters?next=${encodeURIComponent("/battle/online")}`)
+            }
           >
             🌐 オンライン対戦
           </Button>
 
           <Button
             className="h-10 text-xl font-bold bg-blue-500 text-white transition-all hover:scale-105 hover:brightness-110 active:scale-95"
-            onClick={() => movePage("/battle/local")}
+            onClick={() =>
+              movePage(`/characters?next=${encodeURIComponent("/battle/local")}`)
+            }
           >
             🎮 ローカル対戦
           </Button>
