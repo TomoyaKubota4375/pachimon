@@ -5,6 +5,18 @@ export type { MoveId };
 
 export type PlayerId = "player1" | "player2";
 
+export type BattleEffectAnimation =
+  | "red-attack"
+  | "blue-attack"
+  | "yellow-attack"
+  | "white-attack"
+  | "black-attack"
+  | "normal-attack"
+  | "buff"
+  | "debuff"
+  | "status"
+  | "guard";
+
 export type MainStatusCondition =
   | "burn"
   | "paralysis"
@@ -34,23 +46,12 @@ export type MonsterData = {
   id: string;
   name: string;
   type: BattleType;
-
+  imagePath: string;
   maxHp: number;
-
   attack: number;
   defense: number;
   speed: number;
-
   moves: MoveId[];
-};
-
-export type BattleMonster = MonsterData & {
-  hp: number;
-
-  statStages: StatStages;
-
-  mainStatus: MainStatusState | null;
-  volatileStatus: VolatileStatusState | null;
 };
 
 export type MainStatusState = {
@@ -63,6 +64,13 @@ export type MainStatusState = {
 export type VolatileStatusState = {
   condition: VolatileStatusCondition;
   remainingTurns: number;
+};
+
+export type BattleMonster = MonsterData & {
+  hp: number;
+  statStages: StatStages;
+  mainStatus: MainStatusState | null;
+  volatileStatus: VolatileStatusState | null;
 };
 
 export type BattlePlayer = {
@@ -108,6 +116,7 @@ export type BattleMove = {
   maxPp: number;
   accuracy: number;
   priority: number;
+  animation: BattleEffectAnimation;
   effects: MoveEffect[];
 };
 

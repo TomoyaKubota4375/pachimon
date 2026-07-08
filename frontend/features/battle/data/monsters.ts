@@ -6,71 +6,64 @@ import type {
 import { TYPES } from "./types";
 
 export const monsters = {
-  "pachimon-a": {
-    id: "pachimon-a",
-
-    name: "パチモンA",
-
-    type: TYPES.BLUE,
-
-    maxHp: 120,
-
-    attack: 35,
-    defense: 20,
-    speed: 25,
-
-    moves: [
-      "tackle",
-      "fire-ball",
-      "attack-up",
-      "glasses-clean",
-      "sudden-side-step",
-      "guard",
-    ],
-  },
-
-  "pachimon-b": {
-    id: "pachimon-b",
-
-    name: "パチモンB",
-
-    type: TYPES.RED,
-
-    maxHp: 120,
-
-    attack: 32,
-    defense: 22,
-    speed: 20,
-
-    moves: [
-      "tackle",
-      "speed-down",
-      "poison-gas",
-      "glasses-clean",
-      "sudden-side-step",
-      "guard",
-    ],
-  },
-
-  "pachimon-c": {
-    id: "pachimon-c",
-
-    name: "パチモンC",
-
-    type: TYPES.GREEN,
-
-    maxHp: 100,
-
+  bonmon: {
+    id: "bonmon",
+    name: "ぼんもん",
+    type: TYPES.WHITE,
+    imagePath: "/monsters/bonmon.png",
+    maxHp: 105,
     attack: 30,
-    defense: 25,
-    speed: 40,
+    defense: 22,
+    speed: 45,
+    moves: ["bon-quick-hit", "bon-speed-up", "bon-flash"],
+  },
 
-    moves: [
-      "tackle",
-      "poison-gas",
-      "speed-down",
-      "guard",
-    ],
+  kanjimon: {
+    id: "kanjimon",
+    name: "かんじもん",
+    type: TYPES.BLUE,
+    imagePath: "/monsters/kanjimon.png",
+    maxHp: 110,
+    attack: 32,
+    defense: 24,
+    speed: 34,
+    moves: ["kanji-wave", "kanji-dodge", "kanji-blur"],
+  },
+
+  hiroyamon: {
+    id: "hiroyamon",
+    name: "ひろやもん",
+    type: TYPES.GREEN,
+    imagePath: "/monsters/hiroyamon.png",
+    maxHp: 135,
+    attack: 28,
+    defense: 38,
+    speed: 20,
+    moves: ["hiroya-static", "hiroya-guard-up", "hiroya-paralyze"],
+  },
+
+  sympathymon: {
+    id: "sympathymon",
+    name: "シンパシーもん",
+    type: TYPES.BLACK,
+    imagePath: "/monsters/sympathymon.png",
+    maxHp: 115,
+    attack: 31,
+    defense: 25,
+    speed: 30,
+    moves: ["sympathy-pressure", "sympathy-slow", "sympathy-dark-hit"],
+  },
+
+  ikarimon: {
+    id: "ikarimon",
+    name: "いかりもん",
+    type: TYPES.RED,
+    imagePath: "/monsters/ikarimon.png",
+    maxHp: 125,
+    attack: 42,
+    defense: 24,
+    speed: 16,
+    moves: ["ikari-power-up", "ikari-heavy-blow", "ikari-burn"],
   },
 } as const satisfies Record<string, MonsterData>;
 
