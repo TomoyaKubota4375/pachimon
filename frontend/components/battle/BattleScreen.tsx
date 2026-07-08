@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { moves } from "@/features/battle/data/moves";
-import { initialBattleState } from "@/features/battle/data/initialBattleState";
 import { selectMove } from "@/features/battle/engine/battleEngine";
+import { decideActionOrder } from "@/features/battle/engine/decideActionOrder";
 import type {
   BattleEffectAnimation,
   BattleState,
@@ -108,48 +108,69 @@ function getEffectTargetPlayerId(
   return attackerId === "player1" ? "player2" : "player1";
 }
 
-function applyDamageLog(state: BattleState, log: string): BattleState {
-  const damageLog = getDamageFromLog(log);
-
-  if (!damageLog) return state;
-
-  const updatePlayerHp = (playerId: PlayerId) => {
-    const player = state[playerId];
-
-    if (player.monster.name !== damageLog.monsterName) {
-      return player;
-    }
-
-    return {
-      ...player,
-      monster: {
-        ...player.monster,
-        hp: Math.max(0, player.monster.hp - damageLog.damage),
-      },
-    };
-  };
+function applyDamageToPlayer(
+  state: BattleState,
+  playerId: PlayerId,
+  damage: number
+): BattleState {
+  const player = state[playerId];
 
   return {
     ...state,
-    player1: updatePlayerHp("player1"),
-    player2: updatePlayerHp("player2"),
+    [playerId]: {
+      ...player,
+      monster: {
+        ...player.monster,
+        hp: Math.max(0, player.monster.hp - damage),
+      },
+    },
   };
 }
 
-export default function BattleScreen() {
-  const [battleState, setBattleState] = useState(initialBattleState);
-  const [visibleBattleState, setVisibleBattleState] =
-    useState(initialBattleState);
+function getRandomAvailableMoveId(
+  state: BattleState,
+  playerId: PlayerId
+): MoveId | null {
+  const monsterMoves = state[playerId].monster.moves;
+  const movePp = state.movePp[playerId];
 
-  const [currentLog, setCurrentLog] = useState(initialBattleState.logs[0] ?? "");
+  const availableMoves = monsterMoves.filter((moveId) => {
+    return (movePp[moveId] ?? 0) > 0;
+  });
+
+  if (availableMoves.length === 0) {
+    return null;
+  }
+
+  const randomIndex = Math.floor(Math.random() * availableMoves.length);
+
+  return availableMoves[randomIndex];
+}
+
+type BattleResult = {
+  winner: PlayerId;
+};
+
+type BattleScreenProps = {
+  mode?: "local" | "story";
+  initialState: BattleState;
+  onBattleEnd?: (result: BattleResult) => void;
+};
+
+export default function BattleScreen({
+  mode = "local",
+  initialState,
+  onBattleEnd,
+}: BattleScreenProps) {
+    const [battleState, setBattleState] = useState(initialState);
+    const [visibleBattleState, setVisibleBattleState] = useState(initialState);
+
+    const [currentLog, setCurrentLog] = useState(initialState.logs[0] ?? "");
   const [isPlayingLogs, setIsPlayingLogs] = useState(false);
 
-  const [actingMonsterName, setActingMonsterName] = useState<string | null>(
-    null
-  );
-  const [damagedMonsterName, setDamagedMonsterName] = useState<string | null>(
-    null
-  );
+  const [actingPlayerId, setActingPlayerId] = useState<PlayerId | null>(null);
+  const [damagedPlayerId, setDamagedPlayerId] = useState<PlayerId | null>(null);
+  
   const [damageNumberByPlayer, setDamageNumberByPlayer] = useState<
     Partial<Record<PlayerId, number>>
   >({});
@@ -161,34 +182,77 @@ export default function BattleScreen() {
 
   const logQueueRef = useRef<string[]>([]);
   const pendingBattleStateRef = useRef<BattleState | null>(null);
+  const actionOrderQueueRef = useRef<PlayerId[]>([]);
+  const currentAttackerIdRef = useRef<PlayerId | null>(null);
 
   function clearMotionLater() {
     window.setTimeout(() => {
-      setActingMonsterName(null);
-      setDamagedMonsterName(null);
+      setActingPlayerId(null);
+      setDamagedPlayerId(null);
       setDamageNumberByPlayer({});
       setCurrentEffect(null);
       setEffectTargetPlayerId(null);
     }, MOTION_CLEAR_MS);
   }
 
-  const handleSelectMove = (playerId: PlayerId, moveId: MoveId) => {
+const handleSelectMove = (playerId: PlayerId, moveId: MoveId) => {
     if (isPlayingLogs) return;
 
+    if (mode === "story" && playerId === "player2") return;
+
     setBattleState((current) => {
-      const nextState = selectMove(current, playerId, moveId);
-      const newLogs = getNewLogs(current, nextState);
+        let turnReadyStateForUi: BattleState | null = null;
 
-      pendingBattleStateRef.current = nextState;
-      logQueueRef.current = newLogs;
+        if (current.selectedMoves.player1 || current.selectedMoves.player2) {
+            turnReadyStateForUi = {
+                ...current,
+                selectedMoves: {
+                    ...current.selectedMoves,
+                    [playerId]: moveId,
+                },
+            };
+        }
 
-      if (newLogs.length > 0) {
-        setIsPlayingLogs(true);
-      } else {
-        setVisibleBattleState(nextState);
-      }
+        let nextState = selectMove(current, playerId, moveId);
 
-      return nextState;
+        if (
+            mode === "story" &&
+            playerId === "player1" &&
+            nextState.winner === null &&
+            nextState.selectedMoves.player1 !== null &&
+            nextState.selectedMoves.player2 === null
+        ) {
+            const cpuMoveId = getRandomAvailableMoveId(nextState, "player2");
+
+            if (cpuMoveId) {
+                turnReadyStateForUi = {
+                    ...nextState,
+                    selectedMoves: {
+                        ...nextState.selectedMoves,
+                        player2: cpuMoveId,
+                    },
+                };
+
+                nextState = selectMove(nextState, "player2", cpuMoveId);
+            }
+        }
+
+        if (turnReadyStateForUi) {
+            actionOrderQueueRef.current = decideActionOrder(turnReadyStateForUi);
+        }
+
+        const newLogs = getNewLogs(current, nextState);
+
+        pendingBattleStateRef.current = nextState;
+        logQueueRef.current = newLogs;
+
+        if (newLogs.length > 0) {
+            setIsPlayingLogs(true);
+        } else {
+            setVisibleBattleState(nextState);
+        }
+
+        return nextState;
     });
   };
 
@@ -198,8 +262,8 @@ export default function BattleScreen() {
     const timerId = window.setInterval(() => {
       const nextLog = logQueueRef.current.shift();
 
-      setActingMonsterName(null);
-      setDamagedMonsterName(null);
+      setActingPlayerId(null);
+      setDamagedPlayerId(null);
       setDamageNumberByPlayer({});
       setCurrentEffect(null);
       setEffectTargetPlayerId(null);
@@ -222,13 +286,14 @@ export default function BattleScreen() {
       const actingName = getActingMonsterName(nextLog);
 
       if (actingName) {
-        const attackerId = getPlayerIdByMonsterName(
-          visibleBattleState,
-          actingName
-        );
+        const attackerId =
+            actionOrderQueueRef.current.shift() ??
+            getPlayerIdByMonsterName(visibleBattleState, actingName);
+
         const animation = getAnimationFromLog(nextLog);
 
-        setActingMonsterName(actingName);
+        currentAttackerIdRef.current = attackerId;
+        setActingPlayerId(attackerId);
         setCurrentEffect(animation);
         setEffectTargetPlayerId(getEffectTargetPlayerId(animation, attackerId));
         clearMotionLater();
@@ -237,23 +302,28 @@ export default function BattleScreen() {
       const damageLog = getDamageFromLog(nextLog);
 
       if (damageLog) {
-        const damagedPlayerId = getPlayerIdByMonsterName(
-          visibleBattleState,
-          damageLog.monsterName
-        );
+        const attackerId = currentAttackerIdRef.current;
 
-        setDamagedMonsterName(damageLog.monsterName);
+        const targetPlayerId =
+            attackerId === "player1"
+                ? "player2"
+                : attackerId === "player2"
+                    ? "player1"
+                    : getPlayerIdByMonsterName(visibleBattleState, damageLog.monsterName);
 
-        if (damagedPlayerId) {
-          setDamageNumberByPlayer({
-            [damagedPlayerId]: damageLog.damage,
-          });
-        }
+        if (!targetPlayerId) return;
+
+        setDamagedPlayerId(targetPlayerId);
+        setDamageNumberByPlayer({
+            [targetPlayerId]: damageLog.damage,
+        });
 
         clearMotionLater();
 
         window.setTimeout(() => {
-          setVisibleBattleState((current) => applyDamageLog(current, nextLog));
+            setVisibleBattleState((current) =>
+              applyDamageToPlayer(current, targetPlayerId, damageLog.damage)
+            );
         }, HP_REFLECT_DELAY_MS);
       }
     }, LOG_INTERVAL_MS);
@@ -282,20 +352,16 @@ export default function BattleScreen() {
         <MonsterStatus
           player={visibleBattleState.player1}
           align="left"
-          acting={actingMonsterName === visibleBattleState.player1.monster.name}
-          damaged={
-            damagedMonsterName === visibleBattleState.player1.monster.name
-          }
+          acting={actingPlayerId === "player1"}
+          damaged={damagedPlayerId === "player1"}
           damageNumber={damageNumberByPlayer.player1 ?? null}
         />
 
         <MonsterStatus
           player={visibleBattleState.player2}
           align="right"
-          acting={actingMonsterName === visibleBattleState.player2.monster.name}
-          damaged={
-            damagedMonsterName === visibleBattleState.player2.monster.name
-          }
+          acting={actingPlayerId === "player2"}
+          damaged={damagedPlayerId === "player2"}
           damageNumber={damageNumberByPlayer.player2 ?? null}
         />
 
@@ -311,17 +377,19 @@ export default function BattleScreen() {
           />
         </div>
 
-        <div className="absolute right-5 top-[34%] z-30 w-[18rem]">
-          <MoveSelector
-            playerId="player2"
-            title="技を選択してください"
-            monster={visibleBattleState.player2.monster}
-            selectedMoveId={visibleBattleState.selectedMoves.player2}
-            disabled={visibleBattleState.winner !== null || isPlayingLogs}
-            movePp={visibleBattleState.movePp.player2}
-            onSelectMove={handleSelectMove}
-          />
-        </div>
+        {mode !== "story" && (
+            <div className="absolute right-5 top-[34%] z-30 w-[18rem]">
+                <MoveSelector
+                    playerId="player2"
+                    title="技を選択してください"
+                    monster={visibleBattleState.player2.monster}
+                    selectedMoveId={visibleBattleState.selectedMoves.player2}
+                    disabled={visibleBattleState.winner !== null || isPlayingLogs}
+                    movePp={visibleBattleState.movePp.player2}
+                    onSelectMove={handleSelectMove}
+                />
+            </div>
+        )}
 
         <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center">
             <div className="w-[26rem]">
@@ -330,9 +398,27 @@ export default function BattleScreen() {
         </div>
 
         {!isPlayingLogs && visibleBattleState.winner && (
-          <VictoryOverlay
-            winnerName={visibleBattleState[visibleBattleState.winner].name}
-          />
+            <VictoryOverlay
+                winnerName={visibleBattleState[visibleBattleState.winner].name}
+                actionLabel={
+                    mode === "story"
+                        ? visibleBattleState.winner === "player1"
+                            ? "ストーリーへ戻る"
+                            : "リトライ"
+                        : undefined
+                }
+                onAction={
+                    mode === "story"
+                        ? () => {
+                                if (!visibleBattleState.winner) return;
+
+                                onBattleEnd?.({
+                                  winner: visibleBattleState.winner,
+                                });
+                            }
+                        : undefined
+                }
+            />
         )}
       </section>
     </main>
