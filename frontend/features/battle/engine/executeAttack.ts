@@ -1,7 +1,9 @@
 import type { BattleState, PlayerId, MoveId } from "../types";
-import { calculateDamage } from "../mechanics/damage";
 import { moves } from "../data/moves";
+import { applyMoveEffects } from "./effects/effectEngine";
+import { canAct } from "./actionEngine";
 import { getOpponentId } from "./getOpponentId";
+import { getAccuracyMultiplier } from "../mechanics/statStage";
 
 function getMove(moveId: MoveId) {
   return moves.find((move) => move.id === moveId);
@@ -23,11 +25,14 @@ export function executeAttack(
   const moveId = state.selectedMoves[attackerId];
   const logs: string[] = [];
 
-  if (!moveId) return { state, logs };
+  if (!moveId) {
+    return { state, logs };
+  }
 
   const attacker = state[attackerId];
   const defenderId = getOpponentId(attackerId);
   const defender = state[defenderId];
+
   const move = getMove(moveId);
 
   if (!move) {
@@ -40,54 +45,48 @@ export function executeAttack(
     return { state, logs };
   }
 
-  if (move.category === "guard") {
-    logs.push(`${attacker.monster.name} は身を守っている！`);
-    return { state, logs };
+  const actionResult = canAct(state, attackerId);
+
+  if (!actionResult.canAct) {
+    return {
+      state: actionResult.state,
+      logs: actionResult.logs,
+    };
   }
 
-  if (defender.monster.hp <= 0) return { state, logs };
+  state = actionResult.state;
 
   logs.push(`${attacker.monster.name} の ${move.name}！`);
 
-  if (!isMoveHit(move.accuracy)) {
+  const accuracyMultiplier = getAccuracyMultiplier(
+    attacker.monster.statStages.accuracy
+  );
+
+  const evasionMultiplier = getAccuracyMultiplier(
+    defender.monster.statStages.evasion
+  );
+
+  const finalAccuracy =
+    move.accuracy *
+    (accuracyMultiplier / evasionMultiplier);
+
+  if (!isMoveHit(finalAccuracy)) {
     logs.push(`${attacker.monster.name} の攻撃は外れた！`);
-    return { state, logs };
+
+    return {
+      state,
+      logs,
+    };
   }
 
-  const defenderMoveId = state.selectedMoves[defenderId];
-  const defenderMove = defenderMoveId ? getMove(defenderMoveId) : null;
-
-  if (defenderMove?.category === "guard") {
-    logs.push(`${defender.monster.name} は攻撃を防いだ！`);
-    return { state, logs };
-  }
-
-  if (move.category !== "attack") {
-    return { state, logs };
-  }
-
-  const damage = calculateDamage({
-    attacker: attacker.monster,
-    defender: defender.monster,
-    power: move.power ?? 0,
-    moveType: move.type,
-  });
-
-  const newHp = Math.max(0, defender.monster.hp - damage);
-
-  logs.push(`${defender.monster.name} に ${damage} ダメージ！`);
+  const result = applyMoveEffects(
+    state,
+    attackerId,
+    move
+  );
 
   return {
-    state: {
-      ...state,
-      [defenderId]: {
-        ...defender,
-        monster: {
-          ...defender.monster,
-          hp: newHp,
-        },
-      },
-    },
-    logs,
+    state: result.state,
+    logs: [...logs, ...result.logs],
   };
 }

@@ -1,11 +1,15 @@
 import type { BattleState, PlayerId } from "../types";
 import type { MoveId } from "./moves";
 import { moves } from "./moves";
-import { createMonster, monsters } from "./monsters";
+import {
+  createMonster,
+  monsters,
+  type MonsterId,
+} from "./monsters";
 
-type MonsterId = keyof typeof monsters;
-
-function createMovePp(moveIds: MoveId[]): Partial<Record<MoveId, number>> {
+function createMovePp(
+  moveIds: MoveId[]
+): Partial<Record<MoveId, number>> {
   const movePp: Partial<Record<MoveId, number>> = {};
 
   for (const moveId of moveIds) {
@@ -45,6 +49,11 @@ export function createInitialBattleState(
     selectedMoves: {
       player1: null,
       player2: null,
+    },
+
+    guards: {
+      player1: false,
+      player2: false,
     },
 
     movePp: {
