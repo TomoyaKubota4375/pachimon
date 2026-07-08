@@ -196,7 +196,7 @@ export const moves = [
     name: "怒りチャージ",
     type: TYPES.RED,
     maxPp: 20,
-    accuracy: 100,
+    accuracy: 40,
     priority: 0,
     animation: "buff",
     effects: [

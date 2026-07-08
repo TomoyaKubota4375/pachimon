@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  loadStoryProgress,
+  markStageCleared,
+} from "@/features/story/storyProgress";
 
 const stages = [
   "/image/Stage1.png",
@@ -40,6 +45,9 @@ const postPositions = [
 ];
 
 export default function StoryPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [titleStarted, setTitleStarted] = useState(false);
   const [storyIndex, setStoryIndex] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
@@ -49,9 +57,12 @@ export default function StoryPage() {
   const [playerY, setPlayerY] = useState(430);
 
   const [postEventStarted, setPostEventStarted] = useState(false);
-  const [battleStarted, setBattleStarted] = useState(false);
+
   const [clearStarted, setClearStarted] = useState(false);
   const [stageChanging, setStageChanging] = useState(false);
+  const [clearedStages, setClearedStages] = useState<boolean[]>(
+    stages.map(() => false),
+  );
 
   const [screenWidth, setScreenWidth] = useState(1200);
   const [screenHeight, setScreenHeight] = useState(700);
@@ -85,6 +96,35 @@ export default function StoryPage() {
     };
   }, []);
 
+  const currentStageCleared = clearedStages[stageIndex];
+
+  useEffect(() => {
+    const progress = loadStoryProgress();
+    setClearedStages(progress.clearedStages);
+  }, []);
+
+  useEffect(() => {
+    const battleResult = searchParams.get("battle");
+    const returnedStage = Number(searchParams.get("stage"));
+
+    if (battleResult !== "win" && battleResult !== "lose") return;
+    if (Number.isNaN(returnedStage)) return;
+
+    setTitleStarted(true);
+    setGameStarted(true);
+    setStageIndex(returnedStage);
+    setPostEventStarted(false);
+    setPlayerX(START_X);
+    setPlayerY(START_Y);
+
+    if (battleResult === "win") {
+      const nextProgress = markStageCleared(returnedStage);
+      setClearedStages(nextProgress.clearedStages);
+    }
+
+    router.replace("/story");
+  }, [searchParams, router]);
+
   const nextStory = () => {
     if (storyIndex < storyTexts.length - 1) {
       setStoryIndex((index) => index + 1);
@@ -106,13 +146,16 @@ export default function StoryPage() {
     setPlayerY(START_Y);
   };
 
-  const closeBattle = () => {
-    setBattleStarted(false);
-    setPostEventStarted(false);
+  const startBattle = () => {
+    router.push(`/battle/story?stage=${stageIndex}`);
   };
 
   const moveToNextStage = () => {
     if (stageChangingRef.current) return;
+
+    if (!currentStageCleared) {
+      return;
+    }
 
     if (stageIndex >= stages.length - 1) {
       setClearStarted(true);
@@ -126,7 +169,6 @@ export default function StoryPage() {
       setStageIndex((current) => current + 1);
       resetPlayerToLeft();
       setPostEventStarted(false);
-      setBattleStarted(false);
       setStageChanging(false);
       stageChangingRef.current = false;
     }, 500);
@@ -176,23 +218,18 @@ export default function StoryPage() {
         return;
       }
 
-      if (battleStarted && event.key === "Escape") {
-        closeBattle();
-        return;
-      }
-
       if (clearStarted || stageChanging) return;
 
       if (gameStarted && event.key === "Enter" && isNearPost) {
         if (!postEventStarted) {
           setPostEventStarted(true);
         } else {
-          setBattleStarted(true);
+          startBattle();
         }
         return;
       }
 
-      if (gameStarted && !postEventStarted && !battleStarted) {
+      if (gameStarted && !postEventStarted) {
         movePlayer(event.key);
       }
     };
@@ -209,11 +246,11 @@ export default function StoryPage() {
     stageIndex,
     isNearPost,
     postEventStarted,
-    battleStarted,
     clearStarted,
     stageChanging,
     screenWidth,
     screenHeight,
+    currentStageCleared,
   ]);
 
   if (!titleStarted) {
@@ -310,26 +347,16 @@ export default function StoryPage() {
             <p className="pt-8 text-sm text-gray-500">
               Thank you for playing
             </p>
+            <button
+              onClick={() => {
+                sessionStorage.removeItem("pachimon-story-progress");
+                router.push("/");
+              }}
+              className="mt-10 rounded-2xl bg-cyan-500 px-10 py-4 text-xl font-bold text-white shadow-lg transition hover:scale-105 hover:bg-cyan-400"
+            >
+              タイトルへ戻る
+            </button>
           </div>
-        </div>
-      </main>
-    );
-  }
-
-  if (battleStarted) {
-    return (
-      <main className="flex h-screen w-screen items-center justify-center bg-purple-950 text-white">
-        <div className="text-center">
-          <h1 className="text-6xl font-black text-red-300">BATTLE START</h1>
-          <p className="mt-8 text-2xl">ポストの魔力が襲いかかってきた！</p>
-          <p className="mt-10 text-gray-300">Escキーでステージに戻る</p>
-
-          <button
-            onClick={closeBattle}
-            className="mt-8 rounded-xl border-2 border-white px-8 py-3 text-lg font-bold hover:bg-white hover:text-purple-950"
-          >
-            ステージに戻る
-          </button>
         </div>
       </main>
     );
@@ -411,7 +438,9 @@ export default function StoryPage() {
             <p className="mt-1 text-sm text-gray-300">
               {isNearPost
                 ? "Enterキーでポストに話しかける。"
-                : "右端まで進むと次のステージへ移動します。"}
+                : currentStageCleared
+                  ? "右端まで進むと次のステージへ移動します。"
+                  : "ポストの人格もんを倒すまで先には進めません。"}
             </p>
           </>
         ) : (
@@ -425,7 +454,7 @@ export default function StoryPage() {
             </p>
 
             <p className="mt-2 text-sm text-red-300">
-              Enterキーで仮バトル画面へ進む。
+              Enterキーでバトル画面へ進む。
             </p>
           </>
         )}
