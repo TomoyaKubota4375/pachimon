@@ -350,11 +350,11 @@ export default function StoryPage() {
             <button
               onClick={() => {
                 sessionStorage.removeItem("pachimon-story-progress");
-                router.push("/");
+                router.push("/home");
               }}
               className="mt-10 rounded-2xl bg-cyan-500 px-10 py-4 text-xl font-bold text-white shadow-lg transition hover:scale-105 hover:bg-cyan-400"
             >
-              タイトルへ戻る
+              ホームに戻る
             </button>
           </div>
         </div>
