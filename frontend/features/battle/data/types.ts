@@ -6,13 +6,4 @@ export const TYPES = {
   BLACK: "black",
 } as const;
 
-export type BattleType =
-  (typeof TYPES)[keyof typeof TYPES];
-
-export type MoveId =
-  | "tackle"
-  | "fire-ball"
-  | "attack-up"
-  | "speed-down"
-  | "poison-gas"
-  | "guard";
+export type BattleType = (typeof TYPES)[keyof typeof TYPES];

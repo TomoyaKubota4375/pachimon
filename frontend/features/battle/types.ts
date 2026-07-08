@@ -1,14 +1,9 @@
-export type PlayerId = "player1" | "player2";
-
 import type { BattleType } from "./data/types";
+import type { MoveId } from "./data/moves";
 
-export type MoveId =
-  | "tackle"
-  | "fire-ball"
-  | "attack-up"
-  | "speed-down"
-  | "poison-gas"
-  | "guard";
+export type { MoveId };
+
+export type PlayerId = "player1" | "player2";
 
 export type MainStatusCondition =
   | "burn"
@@ -18,28 +13,50 @@ export type MainStatusCondition =
   | "freeze"
   | "sleep";
 
-export type VolatileStatusCondition =
-  | "confusion";
+export type VolatileStatusCondition = "confusion";
 
 export type StatName =
   | "attack"
   | "defense"
-  | "speed";
+  | "speed"
+  | "accuracy"
+  | "evasion";
 
 export type StatStages = {
   attack: number;
   defense: number;
   speed: number;
+  accuracy: number;
+  evasion: number;
+};
+
+export type MonsterData = {
+  id: string;
+  name: string;
+  type: BattleType;
+
+  maxHp: number;
+
+  attack: number;
+  defense: number;
+  speed: number;
+
+  moves: MoveId[];
+};
+
+export type BattleMonster = MonsterData & {
+  hp: number;
+
+  statStages: StatStages;
+
+  mainStatus: MainStatusState | null;
+  volatileStatus: VolatileStatusState | null;
 };
 
 export type MainStatusState = {
   condition: MainStatusCondition;
   remainingTurns?: number;
-
-  // もうどく用
   toxicTurnCount?: number;
-
-  // こおり用
   freezeTurnCount?: number;
 };
 
@@ -48,91 +65,57 @@ export type VolatileStatusState = {
   remainingTurns: number;
 };
 
-export type BattleMonster = {
-  id: string;
-
-  name: string;
-
-  type: BattleType;
-
-  hp: number;
-  maxHp: number;
-
-  attack: number;
-  defense: number;
-  speed: number;
-
-  statStages: StatStages;
-
-  mainStatus: MainStatusState | null;
-
-  volatileStatus: VolatileStatusState | null;
-
-  moves: MoveId[];
-};
-
 export type BattlePlayer = {
   id: PlayerId;
   name: string;
   monster: BattleMonster;
 };
 
-export type MoveCategory =
-  | "attack"
-  | "buff"
-  | "debuff"
-  | "status"
-  | "guard";
+export type DamageEffect = {
+  type: "damage";
+  power: number;
+};
 
-export type MoveStatChange = {
+export type StatEffect = {
+  type: "stat";
   target: "self" | "opponent";
-
   stat: StatName;
-
   stages: number;
-
   chance: number;
 };
 
-export type MoveStatusEffect = {
+export type StatusEffect = {
+  type: "status";
   target: "self" | "opponent";
-
-  condition:
-    | MainStatusCondition
-    | VolatileStatusCondition;
-
+  condition: MainStatusCondition | VolatileStatusCondition;
   chance: number;
 };
+
+export type GuardEffect = {
+  type: "guard";
+};
+
+export type MoveEffect =
+  | DamageEffect
+  | StatEffect
+  | StatusEffect
+  | GuardEffect;
 
 export type BattleMove = {
-  id: MoveId;
-
+  id: string;
   name: string;
-
   type: BattleType;
-
-  category: MoveCategory;
-
   maxPp: number;
-
   accuracy: number;
-
   priority: number;
-
-  power?: number;
-
-  statChanges?: MoveStatChange[];
-
-  statusEffects?: MoveStatusEffect[];
+  effects: MoveEffect[];
 };
 
 export type BattleState = {
   turn: number;
-
   phase: "selecting" | "finished";
 
   player1: BattlePlayer;
-
   player2: BattlePlayer;
 
   selectedMoves: {
@@ -140,13 +123,16 @@ export type BattleState = {
     player2: MoveId | null;
   };
 
-  // ★各モンスターが持っている技だけ保持
+  guards: {
+    player1: boolean;
+    player2: boolean;
+  };
+
   movePp: {
     player1: Partial<Record<MoveId, number>>;
     player2: Partial<Record<MoveId, number>>;
   };
 
   logs: string[];
-
   winner: PlayerId | null;
 };
