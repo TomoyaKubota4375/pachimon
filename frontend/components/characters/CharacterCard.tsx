@@ -9,6 +9,7 @@ const TYPE_LABELS: Record<string, string> = {
   blue: "みず",
   red: "ほのお",
   green: "くさ",
+  yellow: "でんき",
   white: "はく",
   black: "こく",
 };
@@ -17,6 +18,7 @@ const TYPE_COLORS: Record<string, string> = {
   blue: "bg-blue-500 text-white",
   red: "bg-red-500 text-white",
   green: "bg-green-500 text-black",
+  yellow: "bg-yellow-400 text-black",
   white: "bg-gray-100 text-black",
   black: "bg-gray-800 text-white",
 };
@@ -91,8 +93,6 @@ export default function CharacterCard({
       >
         {TYPE_LABELS[character.type] ?? character.type}
       </span>
-
-      <p className="text-xs text-gray-700">{character.description}</p>
     </button>
   );
 }

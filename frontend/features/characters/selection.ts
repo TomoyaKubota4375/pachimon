@@ -9,5 +9,5 @@ export function saveSelectedMonster(monsterId: MonsterId) {
 }
 
 export function getSelectedMonster(): MonsterId | null {
-  return localStorage.getItem(SELECTED_MONSTER_KEY);
+  return localStorage.getItem(SELECTED_MONSTER_KEY) as MonsterId | null;
 }

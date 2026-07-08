@@ -1,21 +1,12 @@
 import type { BattleType } from "@/features/battle/data/types";
+import type { MonsterId } from "@/features/battle/data/monsters";
 
-// バトル側のモンスターIDをそのまま使う（キャラ = モンスター）
-export type MonsterId = string;
+export type { MonsterId };
 
-// 1キャラぶんの「選択画面用」メタデータ
-// バトルのステータス（hp/attack等）はfeatures/battle側が正なので持たない
-export type CharacterMeta = {
-  monsterId: MonsterId;
-  image: string;
-  description: string;
-};
-
-// カード表示に必要な情報をまとめたもの（monsters.tsとCharacterMetaの合成結果）
+// カード表示に必要な情報（features/battle/data/monsters.ts から自動生成する）
 export type CharacterCardData = {
   id: MonsterId;
   name: string;
   type: BattleType;
   image: string;
-  description: string;
 };
