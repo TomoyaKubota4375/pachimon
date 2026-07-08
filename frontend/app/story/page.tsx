@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const stages = [
   "/image/Stage1.png",
@@ -40,6 +41,7 @@ const postPositions = [
 ];
 
 export default function StoryPage() {
+  const router = useRouter();
   const [titleStarted, setTitleStarted] = useState(false);
   const [storyIndex, setStoryIndex] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
@@ -310,6 +312,12 @@ export default function StoryPage() {
             <p className="pt-8 text-sm text-gray-500">
               Thank you for playing
             </p>
+            <button
+  onClick={() => router.push("/home")}
+  className="mt-8 rounded-xl border-2 border-white px-8 py-3 text-lg font-bold text-white hover:bg-white hover:text-black"
+>
+  ホームに戻る
+</button>
           </div>
         </div>
       </main>
