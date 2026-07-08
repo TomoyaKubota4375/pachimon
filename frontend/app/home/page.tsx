@@ -71,11 +71,11 @@ export default function Home() {
         <div className="mt-8 flex flex-col gap-3">
 
           <Button
-            className="h-10 text-xl font-bold bg-yellow-400 text-black transition-all hover:scale-105 hover:brightness-110 active:scale-95"
-            onClick={() => movePage("/story")}
-          >
-            📖 ストーリーモード
-          </Button>
+  className="h-10 text-xl font-bold bg-yellow-400 text-black transition-all hover:scale-105 hover:brightness-110 active:scale-95"
+  onClick={() => movePage("/story")}
+>
+  📖 ストーリーモード
+</Button>
 
           <Button
             className="h-10 text-xl font-bold bg-green-500 text-black transition-all hover:scale-105 hover:brightness-110 active:scale-95"
