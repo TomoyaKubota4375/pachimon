@@ -1,24 +1,38 @@
-import type { StatStages, StatName } from "./types";
+import type { StatName, StatStages } from "../types";
 
-export function clampStage(stage: number): number {
-  return Math.max(-6, Math.min(6, stage));
-}
+const MIN_STAGE = -6;
+const MAX_STAGE = 6;
 
-export function getStageMultiplier(stage: number): number {
-  if (stage >= 0) {
-    return 1 + stage * 0.5;
-  }
-
-  return 2 / (2 + Math.abs(stage));
+function clampStage(stage: number): number {
+  return Math.max(MIN_STAGE, Math.min(MAX_STAGE, stage));
 }
 
 export function applyStageChange(
   statStages: StatStages,
   stat: StatName,
-  change: number
+  stages: number
 ): StatStages {
   return {
     ...statStages,
-    [stat]: clampStage(statStages[stat] + change),
+    [stat]: clampStage(statStages[stat] + stages),
   };
+}
+
+export function getModifiedStat(
+  baseStat: number,
+  stage: number
+): number {
+  if (stage >= 0) {
+    return Math.floor(baseStat * ((2 + stage) / 2));
+  }
+
+  return Math.floor(baseStat * (2 / (2 + Math.abs(stage))));
+}
+
+export function getAccuracyMultiplier(stage: number): number {
+  if (stage >= 0) {
+    return (3 + stage) / 3;
+  }
+
+  return 3 / (3 + Math.abs(stage));
 }

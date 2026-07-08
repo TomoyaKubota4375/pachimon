@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { initialBattleState } from "@/features/battle/data/initialBattleState";
 import { selectMove } from "@/features/battle/engine/battleEngine";
-import type { MoveId } from "@/features/battle/types";
-import type { PlayerId } from "@/features/battle/types";
+import type { MoveId, PlayerId } from "@/features/battle/types";
 import MoveSelector from "./MoveSelector";
 import BattleLog from "./BattleLog";
 import MonsterStatus from "./MonsterStatus";
@@ -27,19 +26,23 @@ export default function BattleScreen() {
 
       <div className="mt-8 grid grid-cols-2 gap-8">
         <MoveSelector
-          playerId="player1"
-          title="プレイヤー1 技選択"
-          selectedMoveId={battleState.selectedMoves.player1}
-          disabled={battleState.winner !== null}
-          onSelectMove={handleSelectMove}
-        />
+            playerId="player1"
+            title="プレイヤー1 技選択"
+            monster={battleState.player1.monster}
+            selectedMoveId={battleState.selectedMoves.player1}
+            disabled={battleState.winner !== null}
+            movePp={battleState.movePp.player1}
+            onSelectMove={handleSelectMove}
+            />
 
         <MoveSelector
-          playerId="player2"
-          title="プレイヤー2 技選択"
-          selectedMoveId={battleState.selectedMoves.player2}
-          disabled={battleState.winner !== null}
-          onSelectMove={handleSelectMove}
+            playerId="player2"
+            title="プレイヤー2 技選択"
+            monster={battleState.player2.monster}
+            selectedMoveId={battleState.selectedMoves.player2}
+            disabled={battleState.winner !== null}
+            movePp={battleState.movePp.player2}
+            onSelectMove={handleSelectMove}
         />
       </div>
 

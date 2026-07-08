@@ -1,29 +1,27 @@
 import type { BattleMove } from "../types";
 import { TYPES } from "./types";
-import type { BattleMove } from "../types";
 
 export const moves = [
   {
     id: "tackle",
     name: "たいあたり",
     type: TYPES.BLUE,
-    category: "attack",
     maxPp: 35,
     accuracy: 100,
     priority: 0,
-    power: 40,
+    effects: [{ type: "damage", power: 40 }],
   },
   {
     id: "fire-ball",
     name: "火の玉",
     type: TYPES.RED,
-    category: "attack",
     maxPp: 15,
     accuracy: 85,
     priority: 0,
-    power: 60,
-    statusEffects: [
+    effects: [
+      { type: "damage", power: 60 },
       {
+        type: "status",
         target: "opponent",
         condition: "burn",
         chance: 10,
@@ -34,12 +32,12 @@ export const moves = [
     id: "attack-up",
     name: "気合い",
     type: TYPES.WHITE,
-    category: "buff",
     maxPp: 20,
     accuracy: 100,
     priority: 0,
-    statChanges: [
+    effects: [
       {
+        type: "stat",
         target: "self",
         stat: "attack",
         stages: 1,
@@ -51,12 +49,12 @@ export const moves = [
     id: "speed-down",
     name: "足止め",
     type: TYPES.BLACK,
-    category: "debuff",
     maxPp: 20,
     accuracy: 95,
     priority: 0,
-    statChanges: [
+    effects: [
       {
+        type: "stat",
         target: "opponent",
         stat: "speed",
         stages: -1,
@@ -68,12 +66,12 @@ export const moves = [
     id: "poison-gas",
     name: "どくガス",
     type: TYPES.GREEN,
-    category: "status",
     maxPp: 20,
     accuracy: 90,
     priority: 0,
-    statusEffects: [
+    effects: [
       {
+        type: "status",
         target: "opponent",
         condition: "poison",
         chance: 100,
@@ -84,9 +82,45 @@ export const moves = [
     id: "guard",
     name: "まもる",
     type: TYPES.WHITE,
-    category: "guard",
     maxPp: 10,
     accuracy: 100,
     priority: 4,
+    effects: [{ type: "guard" }],
+  },
+  {
+    id: "glasses-clean",
+    name: "メガネ拭き",
+    type: TYPES.WHITE,
+    maxPp: 20,
+    accuracy: 100,
+    priority: 0,
+    effects: [
+      {
+        type: "stat",
+        target: "self",
+        stat: "accuracy",
+        stages: 1,
+        chance: 100,
+      },
+    ],
+  },
+  {
+    id: "sudden-side-step",
+    name: "急に反復横跳び",
+    type: TYPES.GREEN,
+    maxPp: 20,
+    accuracy: 100,
+    priority: 0,
+    effects: [
+      {
+        type: "stat",
+        target: "self",
+        stat: "evasion",
+        stages: 1,
+        chance: 100,
+      },
+    ],
   },
 ] as const satisfies readonly BattleMove[];
+
+export type MoveId = (typeof moves)[number]["id"];

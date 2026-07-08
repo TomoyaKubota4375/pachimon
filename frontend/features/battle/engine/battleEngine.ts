@@ -3,6 +3,8 @@ import type { MoveId } from "@/features/battle/types";
 import { decideActionOrder } from "./decideActionOrder";
 import { executeAttack } from "./executeAttack";
 import { checkWinner } from "./checkWinner";
+import { canUseMove, consumeMovePp } from "../mechanics/pp";
+import { processTurnEnd } from "./turnEndEngine";
 
 export function selectMove(
   state: BattleState,
@@ -11,13 +13,25 @@ export function selectMove(
 ): BattleState {
   if (state.phase === "finished") return state;
 
+  if (!canUseMove(state, playerId, moveId)) {
+    return {
+      ...state,
+      logs: [`${state[playerId].name} はその技のPPが足りない！`, ...state.logs],
+    };
+  }
+
+  const stateAfterPp = consumeMovePp(state, playerId, moveId);
+
   const nextState: BattleState = {
-    ...state,
+    ...stateAfterPp,
     selectedMoves: {
-      ...state.selectedMoves,
+      ...stateAfterPp.selectedMoves,
       [playerId]: moveId,
     },
-    logs: [`${state[playerId].name} が技を選択した！`, ...state.logs],
+    logs: [
+      `${stateAfterPp[playerId].name} が技を選択した！`,
+      ...stateAfterPp.logs,
+    ],
   };
 
   if (nextState.selectedMoves.player1 && nextState.selectedMoves.player2) {
@@ -57,13 +71,19 @@ export function executeTurn(state: BattleState): BattleState {
     }
   }
 
-  return {
+  const stateAfterActions: BattleState = {
     ...nextState,
     turn: nextState.turn + 1,
     selectedMoves: {
       player1: null,
       player2: null,
     },
+    guards: {
+      player1: false,
+      player2: false,
+    },
     logs: [...turnLogs, ...nextState.logs],
   };
+
+  return processTurnEnd(stateAfterActions);
 }
