@@ -6,6 +6,7 @@ import {
   loadStoryProgress,
   markStageCleared,
 } from "@/features/story/storyProgress";
+import ScreenFade from "@/components/common/ScreenFade";
 
 const stages = [
   "/image/Stage1.png",
@@ -60,6 +61,7 @@ export default function StoryPage() {
 
   const [clearStarted, setClearStarted] = useState(false);
   const [stageChanging, setStageChanging] = useState(false);
+  const [isFading, setIsFading] = useState(false);
   const [clearedStages, setClearedStages] = useState<boolean[]>(
     stages.map(() => false),
   );
@@ -147,7 +149,13 @@ export default function StoryPage() {
   };
 
   const startBattle = () => {
-    router.push(`/battle/story?stage=${stageIndex}`);
+    const nextPath = encodeURIComponent(`/battle/story?stage=${stageIndex}`);
+
+    setIsFading(true);
+
+    setTimeout(() => {
+      router.push(`/characters?next=${nextPath}`);
+    }, 500);
   };
 
   const moveToNextStage = () => {
@@ -372,6 +380,15 @@ export default function StoryPage() {
         backgroundRepeat: "no-repeat",
       }}
     >
+      <ScreenFade active={isFading} />
+
+      <button
+        onClick={() => router.push("/home")}
+        className="absolute left-6 top-6 z-50 rounded-xl border-2 border-white bg-black/70 px-5 py-3 font-bold text-white transition hover:bg-white hover:text-black"
+      >
+        ← モード選択へ戻る
+      </button>
+
       {stageChanging && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black text-white">
           <div className="text-center">

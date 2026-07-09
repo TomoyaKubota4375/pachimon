@@ -1,50 +1,47 @@
 const STORY_PROGRESS_KEY = "pachimon-story-progress";
 
+const DEFAULT_STAGE_COUNT = 5;
+
 export type StoryProgress = {
   clearedStages: boolean[];
 };
 
-const DEFAULT_STAGE_COUNT = 5;
-
-export function createInitialStoryProgress(): StoryProgress {
-  return {
-    clearedStages: Array(DEFAULT_STAGE_COUNT).fill(false),
-  };
-}
-
 export function loadStoryProgress(): StoryProgress {
   if (typeof window === "undefined") {
-    return createInitialStoryProgress();
+    return {
+      clearedStages: Array(DEFAULT_STAGE_COUNT).fill(false),
+    };
   }
 
-  const savedProgress = window.sessionStorage.getItem(STORY_PROGRESS_KEY);
+  const saved = sessionStorage.getItem(STORY_PROGRESS_KEY);
 
-  if (!savedProgress) {
-    return createInitialStoryProgress();
+  if (!saved) {
+    return {
+      clearedStages: Array(DEFAULT_STAGE_COUNT).fill(false),
+    };
   }
 
   try {
-    return JSON.parse(savedProgress) as StoryProgress;
+    return JSON.parse(saved) as StoryProgress;
   } catch {
-    return createInitialStoryProgress();
+    return {
+      clearedStages: Array(DEFAULT_STAGE_COUNT).fill(false),
+    };
   }
 }
 
 export function saveStoryProgress(progress: StoryProgress) {
-  if (typeof window === "undefined") return;
-
-  window.sessionStorage.setItem(STORY_PROGRESS_KEY, JSON.stringify(progress));
+  sessionStorage.setItem(STORY_PROGRESS_KEY, JSON.stringify(progress));
 }
 
 export function markStageCleared(stageIndex: number): StoryProgress {
-  const currentProgress = loadStoryProgress();
+  const progress = loadStoryProgress();
 
-  const nextClearedStages = [...currentProgress.clearedStages];
-  nextClearedStages[stageIndex] = true;
+  const clearedStages = [...progress.clearedStages];
+  clearedStages[stageIndex] = true;
 
-  const nextProgress = {
-    ...currentProgress,
-    clearedStages: nextClearedStages,
+  const nextProgress: StoryProgress = {
+    clearedStages,
   };
 
   saveStoryProgress(nextProgress);
