@@ -14,9 +14,9 @@ import { getSelectedMonster } from "@/features/characters/selection";
 const STORY_ENEMIES: MonsterId[] = [
   "bonmon",
   "kanjimon",
-  "hiroyamon",
-  "sympathymon",
-  "ikarimon",
+  "shuenmon",
+  "yamijoomon",
+  "ryumon",
 ];
 
 export default function StoryBattlePage() {
@@ -32,6 +32,7 @@ export default function StoryBattlePage() {
   // モンスター選択画面ができるまで主人公は固定
     const battleState = useMemo(() => {
         const selectedMonster = getSelectedMonster() ?? "bonmon";
+        console.log("読み込んだモンスター", selectedMonster);
 
         return createInitialBattleState(selectedMonster, enemyId);
     }, [enemyId]);
