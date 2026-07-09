@@ -7,6 +7,7 @@ import { characters } from "@/features/characters/data/roster";
 import { saveSelectedMonster } from "@/features/characters/selection";
 import CharacterCard from "./CharacterCard";
 import EmptyCharacterSlot from "./EmptyCharacterSlot";
+import ScreenFade from "@/components/common/ScreenFade";
 
 const DEFAULT_NEXT_PATH = "/home";
 
@@ -16,17 +17,24 @@ const TOTAL_SLOTS = 12;
 export default function CharacterSelectScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") || DEFAULT_NEXT_PATH;
+  const nextPath = searchParams.get("next")
+    ? decodeURIComponent(searchParams.get("next")!)
+    : DEFAULT_NEXT_PATH;
 
   // マウスhover・キー操作の両方でこのindexを動かして枠を表示する
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isFading, setIsFading] = useState(false);
 
   const handleConfirm = () => {
     const character = characters[selectedIndex];
     if (!character) return;
 
     saveSelectedMonster(character.id);
-    router.push(nextPath);
+    setIsFading(true);
+
+    setTimeout(() => {
+      router.push(nextPath);
+    }, 500);
   };
 
   useEffect(() => {
@@ -61,6 +69,15 @@ export default function CharacterSelectScreen() {
       className="relative flex min-h-screen flex-col items-center justify-center gap-8 bg-cover bg-center p-10"
       style={{ backgroundImage: "url('/post-bg.png')" }}
     >
+      <ScreenFade active={isFading} />
+
+      <button
+        onClick={() => router.push("/story")}
+        className="absolute left-6 top-6 z-20 rounded-xl border-2 border-white bg-black/70 px-5 py-3 font-bold text-white hover:bg-white hover:text-black"
+      >
+        ← ストーリーに戻る
+      </button>
+
       {/* 背景を暗くする（contentより手前に来ないようz-10より下に置く） */}
       <div className="absolute inset-0 bg-black/45"></div>
 

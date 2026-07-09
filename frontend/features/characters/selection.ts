@@ -5,9 +5,9 @@ import type { MonsterId } from "./types";
 const SELECTED_MONSTER_KEY = "pachimon_selected_monster";
 
 export function saveSelectedMonster(monsterId: MonsterId) {
-  localStorage.setItem(SELECTED_MONSTER_KEY, monsterId);
+  sessionStorage.setItem(SELECTED_MONSTER_KEY, monsterId);
 }
 
 export function getSelectedMonster(): MonsterId | null {
-  return localStorage.getItem(SELECTED_MONSTER_KEY) as MonsterId | null;
+  return sessionStorage.getItem(SELECTED_MONSTER_KEY) as MonsterId | null;
 }
