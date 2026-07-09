@@ -166,6 +166,25 @@ export default function BattleScreen({
     const [visibleBattleState, setVisibleBattleState] = useState(initialState);
 
     const [currentLog, setCurrentLog] = useState(initialState.logs[0] ?? "");
+
+    useEffect(() => {
+        setBattleState(initialState);
+        setVisibleBattleState(initialState);
+        setCurrentLog(initialState.logs[0] ?? "");
+
+        setIsPlayingLogs(false);
+        setActingPlayerId(null);
+        setDamagedPlayerId(null);
+        setDamageNumberByPlayer({});
+        setCurrentEffect(null);
+        setEffectTargetPlayerId(null);
+
+        logQueueRef.current = [];
+        pendingBattleStateRef.current = null;
+        actionOrderQueueRef.current = [];
+        currentAttackerIdRef.current = null;
+    }, [initialState]);
+
   const [isPlayingLogs, setIsPlayingLogs] = useState(false);
 
   const [actingPlayerId, setActingPlayerId] = useState<PlayerId | null>(null);
@@ -407,17 +426,13 @@ const handleSelectMove = (playerId: PlayerId, moveId: MoveId) => {
                             : "リトライ"
                         : undefined
                 }
-                onAction={
-                    mode === "story"
-                        ? () => {
-                                if (!visibleBattleState.winner) return;
+                onAction={() => {
+                    if (!visibleBattleState.winner) return;
 
-                                onBattleEnd?.({
-                                  winner: visibleBattleState.winner,
-                                });
-                            }
-                        : undefined
-                }
+                    onBattleEnd?.({
+                        winner: visibleBattleState.winner,
+                    });
+                }}
             />
         )}
       </section>

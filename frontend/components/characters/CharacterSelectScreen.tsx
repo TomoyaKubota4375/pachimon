@@ -14,7 +14,19 @@ const DEFAULT_NEXT_PATH = "/home";
 // 図鑑としての最低表示枠数。まだ埋まっていない分は「未実装」で埋める
 const TOTAL_SLOTS = 12;
 
-export default function CharacterSelectScreen() {
+type CharacterSelectScreenProps = {
+  title?: string;
+  confirmLabel?: string;
+  backPath?: string;
+  onConfirm?: (characterId: string) => void;
+};
+
+export default function CharacterSelectScreen({
+  title = "キャラを選んでください",
+  confirmLabel = "このキャラで決定",
+  backPath = "/story",
+  onConfirm,
+}: CharacterSelectScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next")
@@ -23,18 +35,42 @@ export default function CharacterSelectScreen() {
 
   // マウスhover・キー操作の両方でこのindexを動かして枠を表示する
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [heldIndex, setHeldIndex] = useState<number | null>(null);
   const [isFading, setIsFading] = useState(false);
 
-  const handleConfirm = () => {
-    const character = characters[selectedIndex];
-    if (!character) return;
+  const confirmCharacter = (index: number) => {
+      const character = characters[index];
+      if (!character) return;
 
-    saveSelectedMonster(character.id);
-    setIsFading(true);
+      if (onConfirm) {
+          onConfirm(character.id);
 
-    setTimeout(() => {
-      router.push(nextPath);
-    }, 500);
+          setHeldIndex(null);
+          setSelectedIndex(0);
+
+          return;
+      }
+
+      saveSelectedMonster(character.id);
+
+      setIsFading(true);
+
+      setTimeout(() => {
+          router.push(nextPath);
+      }, 500);
+  };
+
+  const handleSelectOrConfirm = (index: number) => {
+    if (heldIndex === index) {
+      confirmCharacter(index);
+      return;
+    }
+
+    setHeldIndex(index);
+  };
+
+  const handleConfirmButton = () => {
+    confirmCharacter(heldIndex ?? selectedIndex);
   };
 
   useEffect(() => {
@@ -51,7 +87,7 @@ export default function CharacterSelectScreen() {
 
       if (event.key === "Enter") {
         event.preventDefault();
-        handleConfirm();
+        handleSelectOrConfirm(selectedIndex);
       }
     };
 
@@ -60,7 +96,7 @@ export default function CharacterSelectScreen() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [selectedIndex, nextPath]);
+  }, [selectedIndex, heldIndex, nextPath]);
 
   const emptySlotCount = Math.max(TOTAL_SLOTS - characters.length, 0);
 
@@ -72,7 +108,7 @@ export default function CharacterSelectScreen() {
       <ScreenFade active={isFading} />
 
       <button
-        onClick={() => router.push("/story")}
+        onClick={() => router.push(backPath)}
         className="absolute left-6 top-6 z-20 rounded-xl border-2 border-white bg-black/70 px-5 py-3 font-bold text-white hover:bg-white hover:text-black"
       >
         ← ストーリーに戻る
@@ -83,17 +119,27 @@ export default function CharacterSelectScreen() {
 
       <div className="relative z-10 flex flex-col items-center gap-8">
         <h1 className="text-4xl font-bold text-white drop-shadow-[0_0_10px_black]">
-          キャラを選んでください
+          {title}
         </h1>
+        <p className="text-xl text-white/90">
+          使う「もん」を選んでください
+        </p>
 
-        <Card className="w-full max-w-4xl bg-yellow-200/90 border-4 border-black p-8">
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4">
+        <Button
+          className="w-64 bg-blue-600 py-3 text-xl font-bold text-white"
+          onClick={handleConfirmButton}
+        >
+          {confirmLabel}
+        </Button>
+
+        <Card className="w-full max-w-7xl bg-yellow-200/90 border-4 border-black p-8">
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
             {characters.map((character, index) => (
               <CharacterCard
                 key={character.id}
                 character={character}
-                selected={index === selectedIndex}
-                onSelect={() => setSelectedIndex(index)}
+                selected={index === selectedIndex || index === heldIndex}
+                onSelect={() => handleSelectOrConfirm(index)}
                 onHover={() => setSelectedIndex(index)}
               />
             ))}
@@ -106,9 +152,9 @@ export default function CharacterSelectScreen() {
 
         <Button
           className="w-64 bg-blue-600 py-3 text-xl font-bold text-white"
-          onClick={handleConfirm}
+          onClick={handleConfirmButton}
         >
-          このキャラで決定
+          {confirmLabel}
         </Button>
       </div>
     </main>

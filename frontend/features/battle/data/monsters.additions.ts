@@ -605,12 +605,12 @@ export const monstersAdditions = {
     moves: ["daichi-quake", "daichi-bulwark", "daichi-root-prison", "kusa-guard"],
   },
   kenjamon: {
-    id: "kenjamon", name: "ほのおのけんじゃもん", type: TYPES.RED, imagePath: "/monsters/kenjamon.png",
+    id: "kenjamon", name: "ほのおのたかしもん", type: TYPES.RED, imagePath: "/monsters/kenjamon.png",
     maxHp: 340, attack: 62, defense: 40, speed: 35,
     moves: ["kenja-inferno", "kenja-flame-mastery", "kenja-cinderstorm", "honoo-guard"],
   },
   raijinmon: {
-    id: "raijinmon", name: "らいじんもん", type: TYPES.YELLOW, imagePath: "/monsters/raijinmon.png",
+    id: "raijinmon", name: "レモン(雷)", type: TYPES.YELLOW, imagePath: "/monsters/raijinmon.png",
     maxHp: 320, attack: 58, defense: 38, speed: 58,
     moves: ["raijin-thunderstrike", "raijin-overcharge", "raijin-static-field", "denki-guard"],
   },
