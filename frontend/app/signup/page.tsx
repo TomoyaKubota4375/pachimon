@@ -11,6 +11,7 @@ export default function Signup() {
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isLoggedIn()) {
@@ -25,10 +26,12 @@ export default function Signup() {
 
   const closePopup = () => setIsPopupOpen(false);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const result = signup(trainerName, email, pass);
+    setIsSubmitting(true);
+    const result = await signup(trainerName, email, pass);
+    setIsSubmitting(false);
 
     if (!result.ok) {
       openPopup(result.message);
@@ -93,9 +96,10 @@ export default function Signup() {
 
           <Button
             type="submit"
-            className="w-full bg-green-600 text-white font-bold py-3"
+            disabled={isSubmitting}
+            className="w-full bg-green-600 text-white font-bold py-3 disabled:opacity-50"
           >
-            新規登録
+            {isSubmitting ? "登録中..." : "新規登録"}
           </Button>
         </form>
 

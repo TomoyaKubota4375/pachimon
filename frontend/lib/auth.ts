@@ -1,32 +1,26 @@
-// 仮実装: バックエンドがまだ無いので localStorage をDB代わりに使っている
+// Goバックエンド（backend/）のユーザー認証APIを呼ぶ。
+// セッション（トークン＋表示用の名前）はlocalStorageに保持し、
+// 同期的にログイン状態を読みたい画面（home等）が困らないようにしている。
+import { apiFetch, ApiError } from "./api";
 
-export type StoredUser = {
-  trainerName: string;
-  email: string;
-  password: string;
-};
-
-type Session = {
+export type Session = {
+  token: string;
   trainerName: string;
   email: string;
 };
 
 export type AuthResult = { ok: true } | { ok: false; message: string };
 
-const USERS_KEY = "pachimon_users";
 const SESSION_KEY = "pachimon_session";
 
-function readUsers(): StoredUser[] {
-  try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function writeUsers(users: StoredUser[]) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
+type AuthApiResponse = {
+  token: string;
+  user: {
+    id: string;
+    trainerName: string;
+    email: string;
+  };
+};
 
 function writeSession(session: Session) {
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -49,49 +43,67 @@ export function logout() {
   localStorage.removeItem(SESSION_KEY);
 }
 
-export function signup(
+export async function signup(
   trainerName: string,
   email: string,
   password: string
-): AuthResult {
-  const name = trainerName.trim();
-  const mail = email.trim();
+): Promise<AuthResult> {
+  try {
+    const data = await apiFetch<AuthApiResponse>("/api/auth/signup", {
+      method: "POST",
+      body: { trainerName, email, password },
+    });
 
-  if (!name) return { ok: false, message: "トレーナー名を入力してください" };
-  if (!mail) return { ok: false, message: "メールアドレスを入力してください" };
-  if (!mail.includes("@"))
-    return { ok: false, message: "メールアドレスが正しくありません" };
-  if (password.length < 6)
-    return { ok: false, message: "パスワードは6文字以上です" };
+    writeSession({
+      token: data.token,
+      trainerName: data.user.trainerName,
+      email: data.user.email,
+    });
 
-  const users = readUsers();
-
-  if (users.some((u) => u.email === mail)) {
-    return { ok: false, message: "このメールアドレスは登録済みです" };
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: toErrorMessage(error) };
   }
-
-  users.push({ trainerName: name, email: mail, password });
-  writeUsers(users);
-  writeSession({ trainerName: name, email: mail });
-
-  return { ok: true };
 }
 
-export function login(email: string, password: string): AuthResult {
-  const mail = email.trim();
+export async function login(
+  email: string,
+  password: string
+): Promise<AuthResult> {
+  try {
+    const data = await apiFetch<AuthApiResponse>("/api/auth/login", {
+      method: "POST",
+      body: { email, password },
+    });
 
-  if (!mail) return { ok: false, message: "メールアドレスを入力してください" };
-  if (!password.trim())
-    return { ok: false, message: "パスワードを入力してください" };
+    writeSession({
+      token: data.token,
+      trainerName: data.user.trainerName,
+      email: data.user.email,
+    });
 
-  const users = readUsers();
-  const user = users.find((u) => u.email === mail && u.password === password);
-
-  if (!user) {
-    return { ok: false, message: "メールアドレスまたはパスワードが違います" };
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: toErrorMessage(error) };
   }
+}
 
-  writeSession({ trainerName: user.trainerName, email: user.email });
+// トークンがサーバー側でもまだ有効か確認する。
+// 期限切れ・DBリセット等で無効になっていたらローカルのセッションも消す。
+export async function verifySession(): Promise<boolean> {
+  const session = getCurrentUser();
+  if (!session) return false;
 
-  return { ok: true };
+  try {
+    await apiFetch("/api/me", { token: session.token });
+    return true;
+  } catch {
+    logout();
+    return false;
+  }
+}
+
+function toErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) return error.message;
+  return "サーバーに接続できませんでした";
 }

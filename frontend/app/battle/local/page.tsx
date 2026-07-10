@@ -4,6 +4,7 @@ import { useState } from "react";
 import BattleScreen from "@/components/battle/BattleScreen";
 import CharacterSelectScreen from "@/components/characters/CharacterSelectScreen";
 import { createInitialBattleState } from "@/features/battle/data/createInitialBattleState";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 
 type Phase = "select" | "battle";
 type SelectPlayer = "player1" | "player2";
@@ -12,6 +13,8 @@ type MonsterId = Parameters<typeof createInitialBattleState>[0];
 type InitialBattleState = ReturnType<typeof createInitialBattleState>;
 
 export default function LocalBattlePage() {
+  const session = useRequireAuth();
+
   const [phase, setPhase] = useState<Phase>("select");
   const [selectPlayer, setSelectPlayer] = useState<SelectPlayer>("player1");
   const [player1MonsterId, setPlayer1MonsterId] = useState<MonsterId | null>(null);
@@ -53,6 +56,11 @@ export default function LocalBattlePage() {
     setPlayer1MonsterId(null);
     setBattleState(null);
   };
+
+  // 未ログイン判定 or リダイレクト中は描画しない
+  if (!session) {
+    return null;
+  }
 
   if (phase === "battle" && battleState) {
     return (

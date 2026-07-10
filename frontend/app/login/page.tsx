@@ -10,6 +10,7 @@ export default function Login() {
 
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isLoggedIn()) {
@@ -24,10 +25,12 @@ export default function Login() {
 
   const closePopup = () => setIsPopupOpen(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const result = login(email, pass);
+    setIsSubmitting(true);
+    const result = await login(email, pass);
+    setIsSubmitting(false);
 
     if (!result.ok) {
       openPopup(result.message);
@@ -84,9 +87,10 @@ export default function Login() {
 
           <Button
             type="submit"
-            className="w-full bg-blue-600 text-white font-bold py-3"
+            disabled={isSubmitting}
+            className="w-full bg-blue-600 text-white font-bold py-3 disabled:opacity-50"
           >
-            ログイン
+            {isSubmitting ? "ログイン中..." : "ログイン"}
           </Button>
         </form>
 

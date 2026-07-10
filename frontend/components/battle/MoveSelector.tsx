@@ -29,7 +29,7 @@ export default function MoveSelector({
       <h2 className="mb-4 text-lg font-black">{title}</h2>
 
       <div className="flex flex-col gap-3">
-        {monster.moves.slice(0, 3).map((moveId) => {
+        {monster.moves.map((moveId) => {
           const move = moves.find((move) => move.id === moveId);
 
           if (!move) return null;

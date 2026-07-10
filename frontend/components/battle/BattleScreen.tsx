@@ -152,15 +152,27 @@ type BattleResult = {
 };
 
 type BattleScreenProps = {
-  mode?: "local" | "story";
+  mode?: "local" | "story" | "online";
   initialState: BattleState;
   onBattleEnd?: (result: BattleResult) => void;
+  // online専用: どちら側が自分か。省略時はplayer1（local/story向けデフォルト）
+  localPlayerId?: PlayerId;
+  // online専用: サーバーから届いた最新state（selectMoveをローカルで計算するかわりにこれを反映する）
+  serverState?: BattleState | null;
+  // online専用: 自分の技選択をサーバーへ送る
+  onSubmitMove?: (moveId: MoveId) => void;
+  // online専用: 選択フェーズの締切（unixミリ秒）。nullなら表示しない
+  turnDeadline?: number | null;
 };
 
 export default function BattleScreen({
   mode = "local",
   initialState,
   onBattleEnd,
+  localPlayerId = "player1",
+  serverState = null,
+  onSubmitMove,
+  turnDeadline = null,
 }: BattleScreenProps) {
     const [battleState, setBattleState] = useState(initialState);
     const [visibleBattleState, setVisibleBattleState] = useState(initialState);
@@ -189,7 +201,7 @@ export default function BattleScreen({
 
   const [actingPlayerId, setActingPlayerId] = useState<PlayerId | null>(null);
   const [damagedPlayerId, setDamagedPlayerId] = useState<PlayerId | null>(null);
-  
+
   const [damageNumberByPlayer, setDamageNumberByPlayer] = useState<
     Partial<Record<PlayerId, number>>
   >({});
@@ -214,10 +226,45 @@ export default function BattleScreen({
     }, MOTION_CLEAR_MS);
   }
 
+  // ローカルで計算した/サーバーから届いた新しいstateを、ログ再生アニメーションの
+  // キューに積む。local/story/onlineの3モードとも最終的にここを通る。
+  function enqueueStateTransition(current: BattleState, nextState: BattleState) {
+    if (mode === "online") {
+      actionOrderQueueRef.current = decideActionOrder(current);
+    }
+
+    const newLogs = getNewLogs(current, nextState);
+
+    pendingBattleStateRef.current = nextState;
+    logQueueRef.current = newLogs;
+
+    if (newLogs.length > 0) {
+      setIsPlayingLogs(true);
+    } else {
+      setVisibleBattleState(nextState);
+    }
+  }
+
 const handleSelectMove = (playerId: PlayerId, moveId: MoveId) => {
     if (isPlayingLogs) return;
 
     if (mode === "story" && playerId === "player2") return;
+    if (mode === "online" && playerId !== localPlayerId) return;
+
+    if (mode === "online") {
+        // 実際の反映はサーバーから返ってくるstateを待つ。ここでは
+        // 「選択済み」の見た目だけ即座に更新しておく（相手にはPPが減った様子は見せない）
+        setBattleState((current) => ({
+            ...current,
+            selectedMoves: {
+                ...current.selectedMoves,
+                [playerId]: moveId,
+            },
+        }));
+
+        onSubmitMove?.(moveId);
+        return;
+    }
 
     setBattleState((current) => {
         let turnReadyStateForUi: BattleState | null = null;
@@ -260,20 +307,23 @@ const handleSelectMove = (playerId: PlayerId, moveId: MoveId) => {
             actionOrderQueueRef.current = decideActionOrder(turnReadyStateForUi);
         }
 
-        const newLogs = getNewLogs(current, nextState);
-
-        pendingBattleStateRef.current = nextState;
-        logQueueRef.current = newLogs;
-
-        if (newLogs.length > 0) {
-            setIsPlayingLogs(true);
-        } else {
-            setVisibleBattleState(nextState);
-        }
+        enqueueStateTransition(current, nextState);
 
         return nextState;
     });
   };
+
+  // online専用: サーバーから新しいstateが届いたら、ローカル計算のときと
+  // 同じログ再生アニメーションのキューに積む。
+  useEffect(() => {
+    if (mode !== "online" || !serverState) return;
+
+    setBattleState((current) => {
+      enqueueStateTransition(current, serverState);
+      return serverState;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverState, mode]);
 
   useEffect(() => {
     if (!isPlayingLogs) return;
@@ -352,6 +402,46 @@ const handleSelectMove = (playerId: PlayerId, moveId: MoveId) => {
     };
   }, [isPlayingLogs, visibleBattleState]);
 
+  // online専用: 選択フェーズの残り秒数（1秒ごとに再計算）
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (mode !== "online" || !turnDeadline) {
+      setRemainingSeconds(null);
+      return;
+    }
+
+    const tick = () => {
+      const secondsLeft = Math.max(0, Math.ceil((turnDeadline - Date.now()) / 1000));
+      setRemainingSeconds(secondsLeft);
+    };
+
+    tick();
+    const intervalId = window.setInterval(tick, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [mode, turnDeadline]);
+
+  const opponentPlayerId: PlayerId =
+    localPlayerId === "player1" ? "player2" : "player1";
+
+  // onlineは後から部屋に入った側(player2)でも自分が常に左に表示されるようにする。
+  // local/storyは元々player1=自分固定なので左のまま。
+  const leftPlayerId: PlayerId = mode === "online" ? localPlayerId : "player1";
+  const rightPlayerId: PlayerId =
+    mode === "online" ? opponentPlayerId : "player2";
+
+  const effectTargetSide: "left" | "right" | null =
+    effectTargetPlayerId === null
+      ? null
+      : effectTargetPlayerId === leftPlayerId
+        ? "left"
+        : "right";
+
+  const showBothSelectors = mode === "local";
+  const showOnlyLocalSelector = mode === "story" || mode === "online";
+  const localSelectorPlayerId = mode === "story" ? "player1" : localPlayerId;
+
   return (
     <main className="h-screen overflow-hidden bg-slate-950 p-3">
       <section
@@ -363,40 +453,53 @@ const handleSelectMove = (playerId: PlayerId, moveId: MoveId) => {
         <div className="absolute inset-0 bg-black/35" />
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
 
-        <BattleEffects
-          animation={currentEffect}
-          targetPlayerId={effectTargetPlayerId}
-        />
+        <BattleEffects animation={currentEffect} targetSide={effectTargetSide} />
 
         <MonsterStatus
-          player={visibleBattleState.player1}
+          player={visibleBattleState[leftPlayerId]}
           align="left"
-          acting={actingPlayerId === "player1"}
-          damaged={damagedPlayerId === "player1"}
-          damageNumber={damageNumberByPlayer.player1 ?? null}
+          acting={actingPlayerId === leftPlayerId}
+          damaged={damagedPlayerId === leftPlayerId}
+          damageNumber={damageNumberByPlayer[leftPlayerId] ?? null}
         />
 
         <MonsterStatus
-          player={visibleBattleState.player2}
+          player={visibleBattleState[rightPlayerId]}
           align="right"
-          acting={actingPlayerId === "player2"}
-          damaged={damagedPlayerId === "player2"}
-          damageNumber={damageNumberByPlayer.player2 ?? null}
+          acting={actingPlayerId === rightPlayerId}
+          damaged={damagedPlayerId === rightPlayerId}
+          damageNumber={damageNumberByPlayer[rightPlayerId] ?? null}
         />
 
-        <div className="absolute left-5 top-[34%] z-30 w-[18rem]">
-          <MoveSelector
-            playerId="player1"
-            title="技を選択してください"
-            monster={visibleBattleState.player1.monster}
-            selectedMoveId={visibleBattleState.selectedMoves.player1}
-            disabled={visibleBattleState.winner !== null || isPlayingLogs}
-            movePp={visibleBattleState.movePp.player1}
-            onSelectMove={handleSelectMove}
-          />
-        </div>
+        {showBothSelectors && (
+          <div className="absolute left-5 top-[34%] z-30 w-[18rem]">
+            <MoveSelector
+              playerId="player1"
+              title="技を選択してください"
+              monster={visibleBattleState.player1.monster}
+              selectedMoveId={visibleBattleState.selectedMoves.player1}
+              disabled={visibleBattleState.winner !== null || isPlayingLogs}
+              movePp={visibleBattleState.movePp.player1}
+              onSelectMove={handleSelectMove}
+            />
+          </div>
+        )}
 
-        {mode !== "story" && (
+        {showOnlyLocalSelector && (
+          <div className="absolute left-5 top-[34%] z-30 w-[18rem]">
+            <MoveSelector
+              playerId={localSelectorPlayerId}
+              title="技を選択してください"
+              monster={visibleBattleState[localSelectorPlayerId].monster}
+              selectedMoveId={visibleBattleState.selectedMoves[localSelectorPlayerId]}
+              disabled={visibleBattleState.winner !== null || isPlayingLogs}
+              movePp={visibleBattleState.movePp[localSelectorPlayerId]}
+              onSelectMove={handleSelectMove}
+            />
+          </div>
+        )}
+
+        {mode === "local" && (
             <div className="absolute right-5 top-[34%] z-30 w-[18rem]">
                 <MoveSelector
                     playerId="player2"
@@ -408,6 +511,27 @@ const handleSelectMove = (playerId: PlayerId, moveId: MoveId) => {
                     onSelectMove={handleSelectMove}
                 />
             </div>
+        )}
+
+        {mode === "online" && (
+          <div className="absolute right-5 top-[34%] z-30 w-[18rem] rounded-2xl border-2 border-white/30 bg-black/50 p-4 text-center text-white">
+            <p className="text-sm font-bold text-white/80">
+              {visibleBattleState.selectedMoves[opponentPlayerId]
+                ? "相手は選択済み"
+                : "相手が技を選択中..."}
+            </p>
+
+            {remainingSeconds !== null &&
+              visibleBattleState.winner === null && (
+                <p
+                  className={`mt-2 text-2xl font-black ${
+                    remainingSeconds <= 10 ? "text-red-400" : "text-white"
+                  }`}
+                >
+                  残り {remainingSeconds} 秒
+                </p>
+              )}
+          </div>
         )}
 
         <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center">
@@ -424,7 +548,9 @@ const handleSelectMove = (playerId: PlayerId, moveId: MoveId) => {
                         ? visibleBattleState.winner === "player1"
                             ? "ストーリーへ戻る"
                             : "リトライ"
-                        : undefined
+                        : mode === "online"
+                          ? "ホームへ戻る"
+                          : undefined
                 }
                 onAction={() => {
                     if (!visibleBattleState.winner) return;

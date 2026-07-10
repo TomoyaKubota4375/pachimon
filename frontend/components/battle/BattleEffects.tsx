@@ -1,8 +1,8 @@
-import type { BattleEffectAnimation, PlayerId } from "@/features/battle/types";
+import type { BattleEffectAnimation } from "@/features/battle/types";
 
 type BattleEffectsProps = {
   animation: BattleEffectAnimation | null;
-  targetPlayerId: PlayerId | null;
+  targetSide: "left" | "right" | null;
 };
 
 function getEffectLabel(animation: BattleEffectAnimation): string {
@@ -32,15 +32,14 @@ function getEffectLabel(animation: BattleEffectAnimation): string {
 
 export default function BattleEffects({
   animation,
-  targetPlayerId,
+  targetSide,
 }: BattleEffectsProps) {
-  if (!animation || !targetPlayerId) {
+  if (!animation || !targetSide) {
     return null;
   }
 
   const label = getEffectLabel(animation);
-  const positionClass =
-    targetPlayerId === "player1" ? "left-1/4" : "left-3/4";
+  const positionClass = targetSide === "left" ? "left-1/4" : "left-3/4";
 
   return (
     <div

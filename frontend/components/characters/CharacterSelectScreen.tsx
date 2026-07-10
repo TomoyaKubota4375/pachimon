@@ -8,6 +8,7 @@ import { saveSelectedMonster } from "@/features/characters/selection";
 import CharacterCard from "./CharacterCard";
 import EmptyCharacterSlot from "./EmptyCharacterSlot";
 import ScreenFade from "@/components/common/ScreenFade";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 
 const DEFAULT_NEXT_PATH = "/home";
 
@@ -27,6 +28,8 @@ export default function CharacterSelectScreen({
   backPath = "/story",
   onConfirm,
 }: CharacterSelectScreenProps) {
+  const session = useRequireAuth();
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next")
@@ -99,6 +102,11 @@ export default function CharacterSelectScreen({
   }, [selectedIndex, heldIndex, nextPath]);
 
   const emptySlotCount = Math.max(TOTAL_SLOTS - characters.length, 0);
+
+  // 未ログイン判定 or リダイレクト中は描画しない
+  if (!session) {
+    return null;
+  }
 
   return (
     <main

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   loadStoryProgress,
   markStageCleared,
 } from "@/features/story/storyProgress";
 import ScreenFade from "@/components/common/ScreenFade";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 
 const stages = [
   "/image/Stage1.png",
@@ -46,6 +47,16 @@ const postPositions = [
 ];
 
 export default function StoryPage() {
+  return (
+    <Suspense fallback={null}>
+      <StoryPageContent />
+    </Suspense>
+  );
+}
+
+function StoryPageContent() {
+  const session = useRequireAuth();
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -260,6 +271,11 @@ export default function StoryPage() {
     screenHeight,
     currentStageCleared,
   ]);
+
+  // 未ログイン判定 or リダイレクト中は描画しない
+  if (!session) {
+    return null;
+  }
 
   if (!titleStarted) {
     return (

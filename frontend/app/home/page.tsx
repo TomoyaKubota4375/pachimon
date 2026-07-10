@@ -1,22 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Button, Card } from "pixel-retroui";
-import { getCurrentUser, logout as clearSession } from "@/lib/auth";
+import { logout as clearSession } from "@/lib/auth";
+import { useRequireAuth } from "@/lib/useRequireAuth";
 
 export default function Home() {
-  const [trainerName, setTrainerName] = useState<string | null>(null);
-
-  useEffect(() => {
-    const user = getCurrentUser();
-
-    if (!user) {
-      window.location.href = "/";
-      return;
-    }
-
-    setTrainerName(user.trainerName);
-  }, []);
+  const session = useRequireAuth();
 
   const movePage = (path: string) => {
     window.location.href = path;
@@ -28,7 +17,7 @@ export default function Home() {
   };
 
   // 未ログイン判定 or リダイレクト中はメニューを描画しない
-  if (!trainerName) {
+  if (!session) {
     return null;
   }
 
@@ -62,7 +51,7 @@ export default function Home() {
           </p>
 
           <p className="mt-2 text-3xl font-bold text-white">
-            {trainerName}
+            {session.trainerName}
           </p>
 
         </div>
